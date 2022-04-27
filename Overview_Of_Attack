@@ -1,0 +1,74 @@
+Overview/Summary of the 2021 Kaseya Attack
+By Calvin Bolin and J.R. Earnest
+
+Kaseya is a company with a remote monitoring and management (RMM) platform that is used by MSPs or managed services providers, which perform IT functions such as
+email, phone systems, firewalls, switches, and other networking equipment. The Kaseya VSA agent is installed on endpoints on client workstations and servers. The
+purpose of their software varies from asset tracking to software monitoring. This vendor maintains a presence in 10 countries which includes a US headquarters in
+Miami, Florida. Over 40,000 organizations worldwide use at least one Kaseya software solution.
+
+The group responsible for the Kaseya attack is a Russian-based Ransomware-as-a-Service (RaaS) gang, called REvil. They are the authors and operators of the REvil
+ransomware, also known as Sodinokibi and have been using it since April 2019. This highly evasive ransomware encrypts all files on local drives except those listed
+in their configuration files and deletes ransom request messages after infection. This cybercriminal organization averages about 300 campaigns per month. REvil
+partners are recruited through Russian-speaking underground forums where a limited partnership is offered to potential affiliates that demonstrate effective
+capabilities to penetrate high-value Western organizations.
+
+The Kaseya ransomware attack has impacted over 50 MSPs and between 800 and 1500 companies, including schools, hospitals and a supermarket chain of around 800 stores.
+This represents a total of 37,000 of Kaseya’s clients or 0.001% of their total customer base. Though this is a small percentage of their customers, MSPs have a
+number of companies that they service, widening the potential for impact on all clients.
+
+On July 2, 2021, REvil attacked Kaseya’s VSA SaaS platform using zero-day exploits to gain access and distribute malicious software to their customers and their
+systems. From there, the ransomware gang began using weaknesses on those systems to encrypt everything and demanded 70 million dollars in exchange for a decryption
+key to decrypt all of the data that was kept hostage.
+
+Step 1: Bypassing Authentication and Step 2: Getting a session token and keeping it open:
+How did they do it? First REvil gets several AgentGUIDs, which are kind of like usernames; no one seems to know how they got these, possibly Kaseya knows, but they
+aren’t saying. They then use the AgentGUID and a logic loop vulnerability to bypass a need for a password. The short version of the loop logic is the last two lines
+of the loop end with an elseif statement: elseif password==password login failed, else login successful.  This allows REvil to send a blank password field, which
+will fail, and the loop will continue to the final line of a successful login. Now that they are able to log in to the Kaseya servers they then used a Cross Site
+Request Forgery (CSRF) vulnerability to get a validation token, which is similar to a cookie. They use this token to keep a session open in order to upload their
+malicious payload. This CSRF vulnerability allows you to send a random cookie, as long as it’s the same length of the original cookie, to the server, and the server
+will accept it as valad. Much of the basics of these concepts were covered throughout the Full Stack Academy cyber security class. We looked at loops and their logic
+during our python scripting assignments and in foundations 11 Control Flow. We learned how to make POST and GET requests during our essentials 10. In red team 6 we
+learned several different ways to crack passwords, although the specific exploit by REvil was not covered.  We began creating our own cross site scripting attacks,
+which is similar to CSRF, during red team 5.
+
+Step 3: Uploading the Ransomware:
+The threat actor started the upload by sending a GET request to /done.asp with no parameters. This creates an upload folder and returns a valid loadKey. The loadKey
+is required to perform the upload. Next the attacker sends a POST request to the resource, “/cgi-bin/KUpload.dll” with parameters such as the name and contents of
+the file. The threat actor then uploaded a file named “Agent.crt” which was the actual encoded ransomware that was later pushed out to all agents using a zero-day
+exploit on the server platform. Anti-malware exclusions that Kaseya requires for setup means anything executed by Kaseya agent monitor is ignored because of those
+exclusions, allowing the agent monitor to write the Agent.crt file to a directory for updates. This allowed compromise through a trusted channel and leveraged trust
+in the VSA agent code. 
+Uploading the Payload:
+The threat actor sent another file named Screenshot.jpg which wasn’t a picture but rather a text file containing ASP code. ASP code is used for web pages, web
+services, web applications and is a proprietary product of Microsoft. After obtaining another loadKey value from /done.asp the threat actor uploaded the file. In
+the slideshow picture we see the upload of the file. Near the top of the screen, under Screenshot.jpg, we see
+“Content-Disposition : form-data; name=”Filedata”; filename=”Screenshot.jpg”. This is similar to what we learned during our essentials 10 and 11 lessons where we
+used a curl -X POST to post JSON data. Right below that, we also see the words “DELETE FROM” and “WHERE”. These are terms similar to ones used in SQL injections
+which we learned about in Red Team 5.
+
+Step 4: Executing the Payload on the Server:
+Here is where the threat actor exploited the code injection vulnerability. The attacker sent a POST request to “/userFilterTableRpt.asp” with the “pageFilterSQLFile”
+argument. The vulnerability allowed the contents in the file to be interpreted as ASP code and then passed to the function “eval”, which then evaluates or executes
+the argument, in this case, screenshot.jpg, the file the attacker uploaded. From there, the Kaseya agent ran several Windows shell commands which allowed the
+ransomware to bypass any Windows Defender detection and pushed out the ransomware. In this slideshow picture, we see the POST request used to execute the payload,
+which is similar to what we learned during lesson 10 of our essentials part of the course. During lesson 13 of essentials we also learned various Windows shell
+commands.
+
+How did Kaseya respond?
+The first thing Kaseya did was shut down their VSA SaaS platform and take their data centers offline so that no new malware could enter through that vector. They
+contacted the FBI and CSIA, as well as other 3rd party partners to assist them in this attack. They also contacted all of their MSPs in hopes to gather more
+information on any indicators of compromise (IOCs). An effective decryptor key was found and made available to Kaseya for any systems that had been encrypted. It is
+unknown for certain where or how the key was obtained but Kaseya says it refused to pay the 70 million dollar ransom and on July 12, 2021, 10 days after the attack
+began, released a patch to deploy the security fix.
+
+
+Preventative Measures
+What can be done to prevent future similar attacks and what could have been done to prevent this one? Since REvil used several zero day exploits it’s impossible to
+fully prevent an attack like this from happening; we don’t know what we don’t know. However there are some best practices that could have been implemented, and
+should be implemented going forward, to minimize the risk of this kind of attack. The following recommendations apply not only to Kaseya and this one attack, but to
+every business and the cybersecurity community at large. 1. Active threat hunting on systems and networks. It appears this attack was executed quickly but we don’t
+know how long REvil may have had parts of their malware sitting on Kasey’s servers. Threat hunting could have potentially found the code before it was executed.
+2. Consistently performing pen-testing and looking for security flaws in systems in hopes of finding vulnerabilities and patching them before they can be exploited.
+Finally, transitioning towards a zero trust architecture.
+
