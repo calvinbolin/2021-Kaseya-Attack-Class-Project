@@ -1,0 +1,30 @@
+Presentation Outline
+
+Intro 1min
+
+Introduce ourselves and project
+Why we chose this. Massive  attack that relates to everything we have learned in class, and as security professionals, it’s our biggest fear so let's prepare for it.
+“We’re live here at Fullstack Academy with an important update…”
+
+
+
+Overview of Kaseya Attack 1min
+
+What does Kaseya do - RMM serving MSPs
+Who hacked them - REvil
+Why was this such an important attack to study - because Kaseya has so many users and it dominated the news cycle
+
+
+
+Deep Dive into attack 3 min
+
+Full chain of exploits - the 4 steps to getting into servers and malware onto individual machines
+How they relate to class - almost all parts of the attack we learned about
+
+
+
+Conclusion 1min
+
+Kaseya’s response - shut down servers and contact FBI/CISA
+Preventative measures - threat hunting and zero trust
+Thanks and goodbye
